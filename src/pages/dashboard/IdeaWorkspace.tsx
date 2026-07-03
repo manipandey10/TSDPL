@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
   Search,
-  Filter,
-  ChevronRight,
   Info,
   CheckCircle2,
   Calculator,
@@ -15,7 +13,6 @@ import {
   Edit2,
   Trash2,
   Eye,
-  ArrowRight,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Idea } from '../../lib/supabase';
@@ -37,7 +34,6 @@ const workflowStages = [
 export default function IdeaWorkspace() {
   const { ideas, refreshIdeas } = useOutletContext<OutletContextType>();
   const { profile } = useAuth();
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);

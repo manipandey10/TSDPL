@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Settings as SettingsIcon, User, Bell, Shield, Palette, Save } from 'lucide-react';
+import { User, Bell, Shield, Save } from 'lucide-react';
 
 export default function SettingsPage() {
   const { profile, user } = useAuth();

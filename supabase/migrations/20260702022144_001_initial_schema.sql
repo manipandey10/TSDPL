@@ -207,14 +207,18 @@ CREATE POLICY "notifications_delete_own" ON notifications FOR DELETE
 -- Email queue
 CREATE TABLE IF NOT EXISTS email_queue (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  to_user_id UUID REFERENCES auth.users(id),
   to_email TEXT NOT NULL,
   subject TEXT NOT NULL,
   body TEXT NOT NULL,
+  reference_id TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),
   error_message TEXT,
   sent_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_queue_reference_id ON email_queue(reference_id);
 
 ALTER TABLE email_queue ENABLE ROW LEVEL SECURITY;
 
@@ -228,7 +232,10 @@ CREATE POLICY "email_queue_select" ON email_queue FOR SELECT
 
 DROP POLICY IF EXISTS "email_queue_insert" ON email_queue;
 CREATE POLICY "email_queue_insert" ON email_queue FOR INSERT
-  TO authenticated WITH CHECK (true);
+  TO authenticated WITH CHECK (
+    auth.role() = 'service_role'
+    OR auth.uid() = to_user_id
+  );
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_ideas_submitter ON ideas(submitter_id);
@@ -282,3 +289,6 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Ensure the trigger function runs with an owner that can bypass RLS when invoked by auth
+ALTER FUNCTION public.handle_new_user() OWNER TO postgres;

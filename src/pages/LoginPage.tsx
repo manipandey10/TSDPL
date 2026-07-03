@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { AuthError } from '@supabase/supabase-js';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, Loader2, Building2 } from 'lucide-react';
 
@@ -12,6 +13,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+
+  const formatSupabaseError = (error: AuthError | null) => {
+    if (!error) return 'An unknown error occurred. Please try again.';
+    return error.message || 'An unknown error occurred. Please try again.';
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,11 +33,12 @@ export default function LoginPage() {
       } else if (error.message.includes('Email not confirmed')) {
         setError('Please confirm your email address before signing in.');
       } else {
-        setError(error.message);
+        setError(formatSupabaseError(error));
       }
       return;
     }
 
+    setLoading(false);
     navigate('/dashboard');
   };
 

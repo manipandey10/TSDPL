@@ -10,69 +10,100 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) fetchNotifications();
+    fetchNotifications();
   }, [user]);
 
   const fetchNotifications = async () => {
     setLoading(true);
+
+    if (!user) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
+
     const { data } = await supabase
       .from('notifications')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50);
-    if (data) setNotifications(data);
+
+    setNotifications(data ?? []);
     setLoading(false);
   };
 
   const markAsRead = async (id: string) => {
+    if (!user) return;
+
     await supabase
       .from('notifications')
       .update({ read: true })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
+
     fetchNotifications();
   };
 
   const markAllAsRead = async () => {
+    if (!user) return;
+
     await supabase
       .from('notifications')
       .update({ read: true })
-      .eq('user_id', user?.id)
+      .eq('user_id', user.id)
       .eq('read', false);
+
     fetchNotifications();
   };
 
   const deleteNotification = async (id: string) => {
+    if (!user) return;
+
     await supabase
       .from('notifications')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
+
     fetchNotifications();
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'email': return <Mail className="w-5 h-5" />;
-      case 'alert': return <Bell className="w-5 h-5" />;
-      default: return <MailOpen className="w-5 h-5" />;
+      case 'email':
+        return <Mail className="w-5 h-5" />;
+      case 'alert':
+        return <Bell className="w-5 h-5" />;
+      default:
+        return <MailOpen className="w-5 h-5" />;
     }
   };
 
   const getNotificationColor = (type: string) => {
     switch (type) {
-      case 'approval': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'submission': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'alert': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      case 'approval':
+        return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'submission':
+        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'alert':
+        return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'success':
+        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+      case 'info':
+        return 'bg-sky-500/20 text-sky-400 border-sky-500/30';
+      default:
+        return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Email Notifications</h2>
+          <h2 className="text-2xl font-bold text-white">Notifications</h2>
           <p className="text-slate-400 mt-1">{unreadCount} unread notifications</p>
         </div>
         <div className="flex items-center gap-2">
@@ -146,7 +177,7 @@ export default function NotificationsPage() {
               <Bell className="w-8 h-8 text-slate-500" />
             </div>
             <p className="text-slate-400">No notifications yet</p>
-            <p className="text-sm text-slate-500 mt-1">You'll receive notifications when there are updates to your ideas</p>
+            <p className="text-sm text-slate-500 mt-1">You'll receive notifications when there are updates to your ideas.</p>
           </div>
         )}
       </div>

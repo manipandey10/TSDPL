@@ -1,16 +1,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase, Profile } from '../lib/supabase';
-
+import { User, Session, AuthError } from '@supabase/supabase-js';
+import { supabase, Profile } from '../lib/supabase';import { sendAppNotification } from '../lib/notifications';
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null; data?: any }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,19 +54,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (!error && data?.user) {
+      await supabase.from('notifications').insert({
+        user_id: data.user.id,
+        title: 'Welcome back!',
+        message: 'You have successfully signed in. Check your notifications for recent updates.',
+        type: 'info',
+        read: false,
+      });
+
+      try {
+        await sendAppNotification({
+          type: 'login_admin',
+          user_email: data.user.email ?? '',
+          user_name: (data.user.user_metadata as any)?.full_name || data.user.email || '',
+          login_time: new Date().toISOString(),
+        });
+      } catch (notifyError) {
+        console.error('Login admin notification failed:', notifyError);
+      }
+    }
+
     return { error };
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName }
+    const signUpOptions: { data?: Record<string, string> } = {};
+    if (fullName) {
+      signUpOptions.data = { full_name: fullName };
+    }
+
+    try {
+      const result = await supabase.auth.signUp({
+        email,
+        password,
+        options: signUpOptions,
+      });
+
+      if (result.error) {
+        console.error('Signup failed:', result.error);
       }
-    });
-    return { error };
+
+      return { error: result.error ?? null, data: result.data };
+    } catch (err) {
+      console.error('Signup threw an exception:', err);
+      return {
+        error: {
+          message: err instanceof Error ? err.message : String(err),
+        } as AuthError,
+      };
+    }
   };
 
   const signOut = async () => {

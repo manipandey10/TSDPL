@@ -1,6 +1,6 @@
 import { useOutletContext } from 'react-router-dom';
 import { Idea } from '../../lib/supabase';
-import { Grid3X3, Eye, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Grid3X3, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 interface OutletContextType {
   ideas: Idea[];

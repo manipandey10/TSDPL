@@ -59,17 +59,28 @@ export default function WorkflowTrackerPage() {
           { name: 'D1 Score', icon: GitBranch, color: 'amber' },
           { name: 'D2-D4', icon: ArrowRight, color: 'purple' },
           { name: 'Final', icon: CheckCircle2, color: 'green' },
-        ].map((stage, index) => (
-          <div key={stage.name} className={`bg-slate-800/50 border border-slate-700/50 rounded-xl p-4`}>
-            <div className={`w-8 h-8 bg-${stage.color}-500/20 rounded-lg flex items-center justify-center mb-2`}>
-              <stage.icon className={`w-4 h-4 text-${stage.color}-400`} />
+        ].map((stage) => {
+          const colorClasses: Record<string, { bg: string; text: string }> = {
+            blue: { bg: 'bg-blue-500/20', text: 'text-blue-400' },
+            cyan: { bg: 'bg-cyan-500/20', text: 'text-cyan-400' },
+            amber: { bg: 'bg-amber-500/20', text: 'text-amber-400' },
+            purple: { bg: 'bg-purple-500/20', text: 'text-purple-400' },
+            green: { bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
+          };
+          const styles = colorClasses[stage.color] ?? colorClasses.blue;
+
+          return (
+            <div key={stage.name} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+              <div className={`w-8 h-8 ${styles.bg} rounded-lg flex items-center justify-center mb-2`}>
+                <stage.icon className={`w-4 h-4 ${styles.text}`} />
+              </div>
+              <p className="text-xs text-slate-400">{stage.name}</p>
+              <p className="text-2xl font-bold text-white">
+                {stageData.find(d => d.name.toLowerCase().includes(stage.name.toLowerCase()))?.value || 0}
+              </p>
             </div>
-            <p className="text-xs text-slate-400">{stage.name}</p>
-            <p className="text-2xl font-bold text-white">
-              {stageData.find(d => d.name.toLowerCase().includes(stage.name.toLowerCase()))?.value || 0}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Charts */}

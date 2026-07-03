@@ -8,8 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -65,8 +63,6 @@ function KPICard({ title, value, change, icon: Icon, color, bgColor }: KPICardPr
     </div>
   );
 }
-
-const COLORS = ['#3B82F6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
 
 const monthlyData = [
   { name: 'Jan', submitted: 12, approved: 8, completed: 5 },

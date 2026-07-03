@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AuthError } from '@supabase/supabase-js';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, Eye, EyeOff, UserPlus, AlertCircle, Loader2, Building2 } from 'lucide-react';
 
@@ -14,6 +15,11 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  const formatSupabaseError = (error: AuthError | null) => {
+    if (!error) return 'An unknown error occurred. Please try again.';
+    return error.message || 'An unknown error occurred. Please try again.';
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,20 +37,29 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const { error } = await signUp(email, password, fullName);
-
-    if (error) {
-      setLoading(false);
-      if (error.message.includes('already registered')) {
-        setError('An account with this email already exists');
-      } else {
-        setError(error.message);
+    try {
+      const { error, data } = await signUp(email, password, fullName);
+      if (error) {
+        // Log complete error object for debugging
+        console.error('Signup error details (full):', error, 'signup response data:', data);
+        setLoading(false);
+        if (error.message?.includes('already registered')) {
+          setError('An account with this email already exists');
+        } else {
+          // display the actual backend message when available
+          setError(error.message || formatSupabaseError(error));
+        }
+        return;
       }
+    } catch (err) {
+      console.error('Unexpected signup exception:', err);
+      setError(err instanceof Error ? err.message : String(err));
+      setLoading(false);
       return;
     }
 
-    setSuccess(true);
     setLoading(false);
+    setSuccess(true);
 
     setTimeout(() => navigate('/login'), 2000);
   };
