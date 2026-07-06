@@ -73,7 +73,7 @@ export default function Header({ onMenuClick, darkMode, toggleDarkMode, onNewIde
   }, [user]);
 
   return (
-    <header className="h-16 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
+    <header className={`h-16 backdrop-blur-xl border-b flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 transition-colors duration-300 ${darkMode ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80 border-slate-200'}`}>
       {/* Left section */}
       <div className="flex items-center gap-4">
         <button
@@ -84,8 +84,8 @@ export default function Header({ onMenuClick, darkMode, toggleDarkMode, onNewIde
         </button>
 
         <div className="hidden sm:block">
-          <h1 className="text-lg font-semibold text-white">TSDPL BI Workflow</h1>
-          <p className="text-xs text-slate-400">{formatDate(currentTime)}</p>
+          <h1 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>TSDPL BI Workflow</h1>
+          <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatDate(currentTime)}</p>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export default function Header({ onMenuClick, darkMode, toggleDarkMode, onNewIde
         {/* Submit Idea button */}
         <button
           onClick={onNewIdea}
-          className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-blue-500/20"
+          className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-blue-500/20 hover:-translate-y-0.5"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Submit Idea</span>
@@ -108,7 +108,7 @@ export default function Header({ onMenuClick, darkMode, toggleDarkMode, onNewIde
         {/* Dark mode toggle */}
         <button
           onClick={toggleDarkMode}
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+          className={`p-2 rounded-lg transition-all ${darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
           title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -118,7 +118,7 @@ export default function Header({ onMenuClick, darkMode, toggleDarkMode, onNewIde
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+            className={`relative p-2 rounded-lg transition-all ${darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-700/50' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (

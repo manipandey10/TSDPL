@@ -102,7 +102,7 @@ function NewIdeaModal({ isOpen, onClose, onSubmit }: NewIdeaModalProps) {
 }
 
 export default function DashboardLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
   const [newIdeaModalOpen, setNewIdeaModalOpen] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -138,7 +138,7 @@ export default function DashboardLayout() {
   })();
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}>
       <div className="flex h-screen overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -150,12 +150,19 @@ export default function DashboardLayout() {
             onNewIdea={handleNewIdea}
           />
 
-          <main className="flex-1 overflow-y-auto bg-slate-950 p-4 lg:p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white">{pageTitle}</h2>
-              <p className="text-slate-400 mt-1">Monitor your workflow metrics and manage ideas</p>
+          <main className={`flex-1 overflow-y-auto p-4 lg:p-6 transition-colors duration-300 ${darkMode ? 'bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(135deg,_#020617,_#0f172a)]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.08),_transparent_35%),#f8fafc]'}`}>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{pageTitle}</h2>
+                <p className={`${darkMode ? 'text-slate-400' : 'text-slate-600'} mt-1`}>Monitor your workflow metrics and manage ideas with clarity</p>
+              </div>
+              <div className={`rounded-full border px-3 py-1.5 text-sm ${darkMode ? 'border-slate-700/70 bg-slate-800/70 text-slate-300' : 'border-slate-200 bg-white text-slate-600'}`}>
+                Live workspace
+              </div>
             </div>
-            <Outlet context={{ ideas, refreshIdeas: fetchIdeas }} />
+            <div className="route-transition">
+              <Outlet context={{ ideas, refreshIdeas: fetchIdeas }} />
+            </div>
           </main>
         </div>
       </div>

@@ -114,9 +114,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-50 transform transition-transform duration-300 ease-out lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed top-0 left-0 h-full w-64 backdrop-blur-xl border-r z-50 transform transition-transform duration-300 ease-out lg:translate-x-0 lg:static lg:z-auto ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${'bg-slate-900/95 border-slate-700/50'}`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}

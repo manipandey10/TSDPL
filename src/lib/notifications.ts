@@ -20,11 +20,23 @@ export interface NotificationPayload {
 
 export async function sendAppNotification(payload: NotificationPayload) {
   const response = await supabase.functions.invoke('send-notification', {
-    body: JSON.stringify(payload),
+    body: payload,
   });
 
   if (response.error) {
+    console.error('[Notifications] Edge function error:', {
+      message: response.error.message,
+      name: response.error.name,
+      context: response.error.context,
+      payload,
+    });
     throw new Error(response.error.message || 'Notification function failed');
+  }
+
+  if (response.data && typeof response.data === 'object' && 'error' in response.data) {
+    const backendError = String((response.data as { error?: string }).error || 'Notification function failed');
+    console.error('[Notifications] Backend returned error:', backendError, response.data);
+    throw new Error(backendError);
   }
 
   return response.data;

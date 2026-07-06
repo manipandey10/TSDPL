@@ -21,8 +21,9 @@
 - Role field supports: admin, reviewer, employee
 */
 
--- Enable UUID extension
+-- Enable UUID extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Profiles table for user roles
 CREATE TABLE IF NOT EXISTS profiles (
@@ -194,7 +195,13 @@ CREATE POLICY "notifications_select_own" ON notifications FOR SELECT
 
 DROP POLICY IF EXISTS "notifications_insert_own" ON notifications;
 CREATE POLICY "notifications_insert_own" ON notifications FOR INSERT
-  TO authenticated WITH CHECK (auth.uid() = user_id);
+  TO authenticated WITH CHECK (
+    auth.uid() = user_id
+    OR auth.role() = 'service_role'
+  );
+DROP POLICY IF EXISTS "notifications_insert_service_role" ON notifications;
+CREATE POLICY "notifications_insert_service_role" ON notifications FOR INSERT
+  TO service_role WITH CHECK (true);
 
 DROP POLICY IF EXISTS "notifications_update_own" ON notifications;
 CREATE POLICY "notifications_update_own" ON notifications FOR UPDATE
@@ -236,6 +243,9 @@ CREATE POLICY "email_queue_insert" ON email_queue FOR INSERT
     auth.role() = 'service_role'
     OR auth.uid() = to_user_id
   );
+DROP POLICY IF EXISTS "email_queue_insert_service_role" ON email_queue;
+CREATE POLICY "email_queue_insert_service_role" ON email_queue FOR INSERT
+  TO service_role WITH CHECK (true);
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_ideas_submitter ON ideas(submitter_id);
@@ -271,24 +281,34 @@ CREATE TRIGGER update_workflow_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- Handle new user signup - create profile automatically
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, full_name, role)
   VALUES (
     NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.email, ''),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(COALESCE(NEW.email, 'user'), '@', 1)),
     'employee'
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    full_name = EXCLUDED.full_name,
+    updated_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Ensure the trigger function runs with an owner that can bypass RLS when invoked by auth
 ALTER FUNCTION public.handle_new_user() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO supabase_auth_admin;

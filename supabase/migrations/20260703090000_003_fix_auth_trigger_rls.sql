@@ -8,7 +8,10 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
 CREATE POLICY "profiles_insert_own" ON profiles FOR INSERT
   TO authenticated
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK (
+    auth.uid() = id
+    OR auth.role() = 'service_role'
+  );
 DROP POLICY IF EXISTS "profiles_insert_service_role" ON profiles;
 CREATE POLICY "profiles_insert_service_role" ON profiles FOR INSERT
   TO service_role
@@ -19,7 +22,10 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "notifications_insert_own" ON notifications;
 CREATE POLICY "notifications_insert_own" ON notifications FOR INSERT
   TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    OR auth.role() = 'service_role'
+  );
 DROP POLICY IF EXISTS "notifications_insert_service_role" ON notifications;
 CREATE POLICY "notifications_insert_service_role" ON notifications FOR INSERT
   TO service_role

@@ -1,6 +1,8 @@
 import { useOutletContext } from 'react-router-dom';
 import { Idea } from '../../lib/supabase';
 import { CheckCircle2, Clock, AlertTriangle, FileCheck } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface OutletContextType {
   ideas: Idea[];
@@ -8,9 +10,43 @@ interface OutletContextType {
 }
 
 export default function D0ValidationPage() {
-  const { ideas } = useOutletContext<OutletContextType>();
+  const { ideas, refreshIdeas } = useOutletContext<OutletContextType>();
+  const { profile } = useAuth();
   const pendingValidation = ideas.filter(i => i.current_stage === 'idea_info' || i.current_stage === 'd0_validation');
   const completedValidation = ideas.filter(i => i.current_stage !== 'idea_info' && i.current_stage !== 'd0_validation');
+
+  const handleApprove = async (idea: Idea) => {
+    if (!confirm(`Approve "${idea.project_name}" and move to D1 scoring?`)) return;
+    const { error } = await supabase
+      .from('ideas')
+      .update({ current_stage: 'd1_scoring', status: 'd1_scoring', updated_at: new Date().toISOString() })
+      .eq('id', idea.id);
+
+    if (!error) {
+      // log activity
+      await supabase.from('activity_logs').insert({ user_id: profile?.id ?? null, action: 'd0_approved', entity_type: 'idea', entity_id: idea.id, details: { project_id: idea.project_id } });
+      refreshIdeas();
+    } else {
+      console.error('Approve failed:', error);
+      alert('Failed to approve idea. Check console for details.');
+    }
+  };
+
+  const handleReject = async (idea: Idea) => {
+    if (!confirm(`Reject "${idea.project_name}"? This will mark the idea as rejected.`)) return;
+    const { error } = await supabase
+      .from('ideas')
+      .update({ current_stage: 'idea_info', status: 'rejected', updated_at: new Date().toISOString() })
+      .eq('id', idea.id);
+
+    if (!error) {
+      await supabase.from('activity_logs').insert({ user_id: profile?.id ?? null, action: 'd0_rejected', entity_type: 'idea', entity_id: idea.id, details: { project_id: idea.project_id } });
+      refreshIdeas();
+    } else {
+      console.error('Reject failed:', error);
+      alert('Failed to reject idea. Check console for details.');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -86,9 +122,20 @@ export default function D0ValidationPage() {
                         Awaiting
                       </span>
                     )}
-                    <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors">
-                      Validate
-                    </button>
+                    {profile?.role === 'admin' ? (
+                      <>
+                        <button onClick={() => handleApprove(idea)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors">
+                          Approve
+                        </button>
+                        <button onClick={() => handleReject(idea)} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm transition-colors">
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors">
+                        Validate
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

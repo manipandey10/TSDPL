@@ -1,6 +1,8 @@
 import { useOutletContext } from 'react-router-dom';
 import { Idea } from '../../lib/supabase';
 import { Calculator, TrendingUp, Award, Target } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface OutletContextType {
   ideas: Idea[];
@@ -8,7 +10,8 @@ interface OutletContextType {
 }
 
 export default function D1ScoreMatrixPage() {
-  const { ideas } = useOutletContext<OutletContextType>();
+  const { ideas, refreshIdeas } = useOutletContext<OutletContextType>();
+  const { profile } = useAuth();
   const scoreGroups = {
     high: ideas.filter(i => i.score >= 80),
     medium: ideas.filter(i => i.score >= 50 && i.score < 80),
@@ -142,13 +145,51 @@ export default function D1ScoreMatrixPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      idea.score >= 80 ? 'bg-green-500/20 text-green-400' :
-                      idea.score >= 50 ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-red-500/20 text-red-400'
-                    }`}>
-                      {idea.score >= 80 ? 'Excellent' : idea.score >= 50 ? 'Good' : 'Needs Improvement'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        idea.score >= 80 ? 'bg-green-500/20 text-green-400' :
+                        idea.score >= 50 ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {idea.score >= 80 ? 'Excellent' : idea.score >= 50 ? 'Good' : 'Needs Improvement'}
+                      </span>
+                      {profile?.role === 'admin' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Promote "${idea.project_name}" to D2-D4 workflow?`)) return;
+                              const { error } = await supabase.from('ideas').update({ current_stage: 'd2_d4_workflow', status: 'd2_d4_workflow', updated_at: new Date().toISOString() }).eq('id', idea.id);
+                              if (!error) {
+                                await supabase.from('activity_logs').insert({ user_id: profile?.id ?? null, action: 'd1_promoted', entity_type: 'idea', entity_id: idea.id, details: { score: idea.score } });
+                                refreshIdeas();
+                              } else {
+                                console.error('Promote failed', error);
+                                alert('Failed to promote idea.');
+                              }
+                            }}
+                            className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs"
+                          >
+                            Promote
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Send "${idea.project_name}" back to D0 validation?`)) return;
+                              const { error } = await supabase.from('ideas').update({ current_stage: 'd0_validation', status: 'd0_validation', updated_at: new Date().toISOString() }).eq('id', idea.id);
+                              if (!error) {
+                                await supabase.from('activity_logs').insert({ user_id: profile?.id ?? null, action: 'd1_sent_back', entity_type: 'idea', entity_id: idea.id, details: { score: idea.score } });
+                                refreshIdeas();
+                              } else {
+                                console.error('Send back failed', error);
+                                alert('Failed to send back idea.');
+                              }
+                            }}
+                            className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs"
+                          >
+                            Send Back
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
